@@ -1,3 +1,22 @@
+/**
+ *  @file server.js
+ *  @brief The server manages reads; interprets and pushes data from the serial port to a node site
+ *  @description The Nissan Consult protocol requires a set of codes to be sent to the ECU to initialize, after which codes can be sent
+ *  to request specific ECU information..
+ *  # The Data Format is 1 start bit (always low), 8 data bits, no parity, 1 stop bit (always high) 
+ *  # The data is actually processed by the ECU's micro LSB first. Each serial string is 
+ *  # made up of blocks of : <Start bit (0)> <8 data bits LSB-MSB(xxxxxxxx)><Stop bit (1)>
+ *  # Data is sent as raw Hex,8N1, no spaces or carriage return characters etc are used
+ *  
+ *  @note See https://www.plmsdevelopments.com/images_ms/Consult_Protocol_&_Commands_Issue_6.pdf for reference
+ */
+
+// Override currently set environment to development mode
+process.env.NODE_ENV = 'development';
+var Log = console.log; // Easier to debug when using a shortcut
+var Port_Windows = 'COM1'; // COM1 for windows laptop, /dev/ttyUSB0 for Linux
+var Port_Linux = '/dev/ttyUSB0'; // COM1 for windows laptop, /dev/ttyUSB0 for Linux
+var BAUDRATE = 9600;
 var PATH_TO_SERIAL_PORT = '';
 var path = require('path');
 var fs = require('fs');
@@ -5,18 +24,38 @@ var express = require('express');
 var serialport = require("serialport");
 var SerialPort = serialport.SerialPort;
 
-// Don't set the serialport on development
-if (process.env.NODE_ENV != "development"){
-  var sp = new SerialPort('/dev/ttyUSB0', { baudrate: 9600 });
-}
-
 // All the values we are getting from the ECU
 var rpm, mph, coolantTemp = 0;
-
 var currentData= [];
 var frameStarted = false;
 var lengthByte;
 
+Log(`This platform is ${process.platform}, running in ${process.env.NODE_ENV} mode`)
+
+if (process.env.NODE_ENV != "development"){
+	// If we're in live mode, open the serial port, else don't 
+	if process.platform == 'win32' {
+		// Open the windows comport
+		var sp = new SerialPort(Port_Windows, { baudrate: BAUDRATE });
+	}
+	else if process.platform == 'linux' {
+		// Open the linux serial port
+		var sp = new SerialPort(Port_Linux, { baudrate: BAUDRATE});
+	}
+	else {
+		// Since there is no other port defined, log an error and break
+		Log('Error opening serial connection, ${process.platform} not defined');
+	}
+}
+
+
+/**
+ *  @brief Interprets the input data and checks whether this is a correct hex string
+ *  
+ *  @param [in] data Data which has been received
+ *  @param [in] bytesExpected Expected data length
+ *  @return An array of length [bytesExpected] which includes the required data
+ */
 function handleData(data, bytesExpected){
   // create an array of the size of requested data length and fill with requested data
   for(var i = 0; i < data.length; i++){
@@ -25,16 +64,18 @@ function handleData(data, bytesExpected){
     if(char === "ff"){
       // Beginning of data array, the frame has started
       frameStarted = true;
-      // Get rid of last frame of data
+      // Get rid of previous frame of data
       currentData = [];
-      // remove last lengthByte number so that we can check what this frame's byte should be
+      // remove previous lengthByte number so that we can check what this frame's byte should be
       lengthByte = undefined;
-    }else if(frameStarted){
+    }
+	else if(frameStarted){
       // frame has started
       if(!lengthByte){
         // read lengthByte from the ECU
         lengthByte = parseInt(char, 16);
-      }else{
+      }
+	  else{
         // push byte of data onto our array
         currentData.push(parseInt(char, 16));
       }
@@ -47,36 +88,53 @@ function handleData(data, bytesExpected){
   }
 }
 
+/**
+ *  @brief Convert RPM LSB and MSB to a human readable value
+ *  
+ *  @param [in] mostSignificantBit (0x00)
+ *  @param [in] leastSignificantBit (0x01)
+ *  @return RPM
+ */
 function convertRPM(mostSignificantBit, leastSignificantBit){
   // combine most significant bit and least significant bit and convert to RPM
   return ((mostSignificantBit << 8) + leastSignificantBit) * 12.5;
 }
 
+/**
+ *  @brief Convert the coolant temperature to degrees centigrade
+ *  
+ *  @param [in] data Coolant temperature byte (0x08)
+ *  @return Coolant temperature in Celsius
+ */
 function convertCoolantTemp(data){
   // Subtract 50 for Celsius
   var celciusCoolantTemp = data - 50;
-  // Convert celcius to fahrenheit
-  var fahrenheitCoolantTemp = celciusCoolantTemp * 1.8 + 32;
-
-  return fahrenheitCoolantTemp;
+  
+  return celciusCoolantTemp;
 }
 
+/**
+ *  @brief Convert data to speed in km/h
+ *  
+ *  @param [in] data Speed byte (0x0b)
+ *  @return Speed in km/h
+ */
 function convertKPH(data){
   // data * 2 gives KPH
   return data * 2;
 }
 
-function convertMPH(data){
-  // data * 2 gives KPH
-  return convertKPH(data) * 0.6213711922;
-}
-
+/**
+ *  @brief Parse the data table in order to return legible values
+ *  
+ *  @param [in] data Data table
+ */
 function parseData(data){
 
   if(data !== undefined){
     rpm = convertRPM(data[1], data[2]);
     coolantTemp = convertCoolantTemp(data[0]);
-    mph = convertMPH(data[3]);
+    mph = convertKPH(data[3]);
   }
 
 }
