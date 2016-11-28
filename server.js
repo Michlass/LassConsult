@@ -25,7 +25,7 @@ var serialport = require("serialport");
 var SerialPort = serialport.SerialPort;
 
 // All the values we are getting from the ECU
-var rpm, mph, coolantTemp = 0;
+var rpm, kph, coolantTemp, O2_1,O2_2,batteryVoltage = 0;
 var currentData= [];
 var frameStarted = false;
 var lengthByte;
@@ -114,7 +114,7 @@ function convertCoolantTemp(data){
 }
 
 /**
- *  @brief Convert data to speed in km/h
+ *  @brief Convert data to speed in [km/h]
  *  
  *  @param [in] data Speed byte (0x0b)
  *  @return Speed in km/h
@@ -125,6 +125,28 @@ function convertKPH(data){
 }
 
 /**
+ *  @brief Convert received data to battery voltage [mV]
+ *  
+ *  @param [in] data Battery voltage byte (0x0c)
+ *  @return Battery voltage in [mV]
+ */
+function convertBatteryVoltage(data){
+	// data * 80 returns mV
+	return data * 80;
+}
+
+/**
+ *  @brief Convert received data to lambda sensor voltage [mV]
+ *  
+ *  @param [in] data Oxygen voltage byte
+ *  @return Voltage of oxygensensor in [mV]
+ */
+function convertLambda(data){
+	//data * 10 returns mV
+	return data * 10;
+}
+
+/**
  *  @brief Parse the data table in order to return legible values
  *  
  *  @param [in] data Data table
@@ -132,15 +154,17 @@ function convertKPH(data){
 function parseData(data){
 
   if(data !== undefined){
-    rpm = convertRPM(data[1], data[2]);
     coolantTemp = convertCoolantTemp(data[0]);
-    mph = convertKPH(data[3]);
+    rpm = convertRPM(data[1], data[2]);
+    O2_1 = convertLambda(data[3]);
+    O2_2 = convertLambda(data[4]);
+    kph = convertKPH(data[5]);
+	batteryVoltage = convertBatteryVoltage(data[6]);
   }
-
 }
 
 var isConnected = false;
-var command = [0x5A,0x08,0x5A,0x00,0x5A,0x01,0x5A,0x0b,0xF0];
+var command = [0x5A,0x08,0x5A,0x00,0x5A,0x01,0x5A,0x09,0x5A,0x0a,0x5A,0x0b,0x5A,0x0c,0xF0];
 var bytesRequested = (command.length - 1) / 2;
 
 // Don't run this part for development.
