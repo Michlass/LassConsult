@@ -1,21 +1,20 @@
-/**
- *  @file server.js
- *  @brief The server manages reads; interprets and pushes data from the serial port to a node site
- *  @description The Nissan Consult protocol requires a set of codes to be sent to the ECU to initialize, after which codes can be sent
- *  to request specific ECU information..
- *  # The Data Format is 1 start bit (always low), 8 data bits, no parity, 1 stop bit (always high) 
- *  # The data is actually processed by the ECU's micro LSB first. Each serial string is 
- *  # made up of blocks of : <Start bit (0)> <8 data bits LSB-MSB(xxxxxxxx)><Stop bit (1)>
- *  # Data is sent as raw Hex,8N1, no spaces or carriage return characters etc are used
+/*  @file server.js
+ *  The server manages reads; interprets and pushes data from the serial port to a node site
+ *  The Nissan Consult protocol requires a set of codes to be sent to the ECU to initialize, after which codes can be sent
+ *  to request specific ECU information.
+ *  
+ *  @note The following rules apply:
+ *  	- The Data Format is 1 start bit (always low), 8 data bits, no parity, 1 stop bit (always high) 
+ * 		- The data is actually processed by the ECU's micro LSB first. Each serial string is made up of blocks of : <Start bit (0)> <8 data bits LSB-MSB(xxxxxxxx)><Stop bit (1)>
+ *		- Data is sent as raw Hex,8N1, no spaces or carriage return characters etc are used
  *  
  *  @note See https://www.plmsdevelopments.com/images_ms/Consult_Protocol_&_Commands_Issue_6.pdf for reference
  */
 
-// Override currently set environment to development mode
-process.env.NODE_ENV = 'development';
 var Log = console.log; // Easier to debug when using a shortcut
 var Port_Windows = 'COM1'; // COM1 for windows laptop, /dev/ttyUSB0 for Linux
 var Port_Linux = '/dev/ttyUSB0'; // COM1 for windows laptop, /dev/ttyUSB0 for Linux
+var PLATFORM = process.platform; // Init the current platform for easy reference
 var BAUDRATE = 9600;
 var PATH_TO_SERIAL_PORT = '';
 var path = require('path');
@@ -29,28 +28,31 @@ var rpm, kph, coolantTemp, O2_1,O2_2,batteryVoltage = 0;
 var currentData= [];
 var frameStarted = false;
 var lengthByte;
+var isConnected = false;
+var command = [0x5A,0x08,0x5A,0x00,0x5A,0x01,0x5A,0x09,0x5A,0x0a,0x5A,0x0b,0x5A,0x0c,0xF0];
+var bytesRequested = (command.length - 1) / 2;
 
-Log(`This platform is ${process.platform}, running in ${process.env.NODE_ENV} mode`)
+Log(`This platform is ${process.platform} running in ${process.env.NODE_ENV}`);
 
 if (process.env.NODE_ENV != "development"){
 	// If we're in live mode, open the serial port, else don't 
-	if process.platform == 'win32' {
+	if (PLATFORM == "win32") {
 		// Open the windows comport
 		var sp = new SerialPort(Port_Windows, { baudrate: BAUDRATE });
 	}
-	else if process.platform == 'linux' {
+	else if (PLATFORM == "linux") {
 		// Open the linux serial port
 		var sp = new SerialPort(Port_Linux, { baudrate: BAUDRATE});
 	}
 	else {
 		// Since there is no other port defined, log an error and break
 		Log('Error opening serial connection, ${process.platform} not defined');
+		return false
 	}
 }
 
-
-/**
- *  @brief Interprets the input data and checks whether this is a correct hex string
+/*
+ *  Interprets the input data and checks whether this is a correct hex string
  *  
  *  @param [in] data Data which has been received
  *  @param [in] bytesExpected Expected data length
@@ -88,8 +90,8 @@ function handleData(data, bytesExpected){
   }
 }
 
-/**
- *  @brief Convert RPM LSB and MSB to a human readable value
+/*
+ *  Convert RPM LSB and MSB to a human readable value
  *  
  *  @param [in] mostSignificantBit (0x00)
  *  @param [in] leastSignificantBit (0x01)
@@ -100,8 +102,8 @@ function convertRPM(mostSignificantBit, leastSignificantBit){
   return ((mostSignificantBit << 8) + leastSignificantBit) * 12.5;
 }
 
-/**
- *  @brief Convert the coolant temperature to degrees centigrade
+/*
+ *  Convert the coolant temperature to degrees centigrade
  *  
  *  @param [in] data Coolant temperature byte (0x08)
  *  @return Coolant temperature in Celsius
@@ -113,8 +115,8 @@ function convertCoolantTemp(data){
   return celciusCoolantTemp;
 }
 
-/**
- *  @brief Convert data to speed in [km/h]
+/*
+ *  Convert data to speed in [km/h]
  *  
  *  @param [in] data Speed byte (0x0b)
  *  @return Speed in km/h
@@ -124,8 +126,8 @@ function convertKPH(data){
   return data * 2;
 }
 
-/**
- *  @brief Convert received data to battery voltage [mV]
+/*
+ *  Convert received data to battery voltage [mV]
  *  
  *  @param [in] data Battery voltage byte (0x0c)
  *  @return Battery voltage in [mV]
@@ -135,8 +137,8 @@ function convertBatteryVoltage(data){
 	return data * 80;
 }
 
-/**
- *  @brief Convert received data to lambda sensor voltage [mV]
+/*
+ *  Convert received data to lambda sensor voltage [mV]
  *  
  *  @param [in] data Oxygen voltage byte
  *  @return Voltage of oxygensensor in [mV]
@@ -146,8 +148,8 @@ function convertLambda(data){
 	return data * 10;
 }
 
-/**
- *  @brief Parse the data table in order to return legible values
+/*
+ *  Parse the data table in order to return legible values
  *  
  *  @param [in] data Data table
  */
@@ -162,10 +164,6 @@ function parseData(data){
 	batteryVoltage = convertBatteryVoltage(data[6]);
   }
 }
-
-var isConnected = false;
-var command = [0x5A,0x08,0x5A,0x00,0x5A,0x01,0x5A,0x09,0x5A,0x0a,0x5A,0x0b,0x5A,0x0c,0xF0];
-var bytesRequested = (command.length - 1) / 2;
 
 // Don't run this part for development.
 if (process.env.NODE_ENV != "development"){
@@ -212,10 +210,10 @@ io.on('connection', function (socket) {
         } else{
           rpm = 0
         }
-        if(mph < 120){
-          mph += 1
+        if(kph < 180){
+          kph += 1
         } else{
-          mph = 0
+          kph = 0
         }
         if(coolantTemp < 210){
           coolantTemp += 1
@@ -224,6 +222,6 @@ io.on('connection', function (socket) {
         }
       }
 
-      socket.emit('ecuData', {'rpm':Math.floor(rpm),'mph':Math.floor(mph),'coolantTemp':Math.floor(coolantTemp)});
+      socket.emit('ecuData', {'rpm':Math.floor(rpm),'kph':Math.floor(kph),'coolantTemp':Math.floor(coolantTemp)});
     }, 100);
 });

@@ -25,7 +25,7 @@
 .neon-dash-container{
   display: flex;
 }
-[class*='big-']:after, .mph__number--default:before{
+[class*='big-']:after, .kph__number--default:before{
 	display: inline-block;
    font-family: 'big numbers';
    font-style: normal;
@@ -35,63 +35,63 @@
    -moz-osx-font-smoothing: grayscale;
    margin-left: -27px;
 }
-.mph__number--0:after{
+.kph__number--0:after{
   content:'\0030';
   position: relative;
   left: -27px;
 }
-.mph__number--1:after{
+.kph__number--1:after{
   content:'\0031';
   font-size: 135px;
   left: 6px;
   position: relative;
 }
-.mph__number--2:after{
+.kph__number--2:after{
   content:'\0032';
   position: relative;
   left: -27px;
 }
-.mph__number--3:after{
+.kph__number--3:after{
   content:'\0033';
   position: relative;
   left: -25px;
 }
-.mph__number--4:after{
+.kph__number--4:after{
   content:'\0034';
   position: relative;
   left: -23px;
   /*top: 1px;*/
   font-size: 137px;
 }
-.mph__number--5:after{
+.kph__number--5:after{
   content:'\0035';
   position: relative;
   left: -27px;
   font-size: 145px;
 }
-.mph__number--6:after{
+.kph__number--6:after{
   content:'\0036';
   position: relative;
   left: -27px;
   font-size: 145px;
 }
-.mph__number--7:after{
+.kph__number--7:after{
   content: '\0037';
   position: relative;
   left: -24px;
   font-size: 143px;
   top: -1px;
 }
-.mph__number--8:after, .mph__number--default:before{
+.kph__number--8:after, .kph__number--default:before{
   content:'\0038';
 }
-.mph__number--8:after{
+.kph__number--8:after{
   position: relative;
   left: -27px;
   top: 0;
   font-size: 145px;
 }
-.mph__number--9:after{
+.kph__number--9:after{
   content:'\0039';
   position: relative;
   left: -27px;
@@ -291,7 +291,7 @@ body {
   background: #423E4A;
 }
 
-.mph, .mph--background{
+.kph, .kph--background{
   font-family: "big numbers";
   color: #ffffff;
   font-size: 145px;
@@ -301,7 +301,7 @@ body {
   letter-spacing: -48px;
   position: absolute;
 }
-.mph__label{
+.kph__label{
   text-align: center;
   font-size: 30px;
   font-family: "Brandon Grotesque";
@@ -310,28 +310,28 @@ body {
   top: 135px;
   position: relative;
 }
-.mph__container{
+.kph__container{
   width: 278px;
   height: 145px;
   margin: 150px auto 0;
   /*overflow: hidden;*/
 }
-.mph__number--default{
+.kph__number--default{
   margin-right: 25px;
   color: #423E4A;
   width: 76px;
 }
-.mph__number--default:last-child{
+.kph__number--default:last-child{
   margin-right: 0;
 }
-.mph__number{
+.kph__number{
   position: absolute;
   width: 76px;
 }
-.mph__number:nth-child(2n){
+.kph__number:nth-child(2n){
   left: 94px;
 }
-.mph__number:nth-child(3n){
+.kph__number:nth-child(3n){
   left: 190px;
 }
 .temp__container{
@@ -357,11 +357,11 @@ li {
   flex-direction: column;
   list-style: none;
 }
-.mph-column .mph__container{
+.kph-column .kph__container{
   margin-top: 0;
   height: 225px;
 }
-.mph-column {
+.kph-column {
   padding: 0 20px;
 }
 

@@ -30,9 +30,9 @@
 
 ##### Install Dash
 
-`git clone https://github.com/gregsqueeb/consultDash.git`
+`git clone https://github.com/MichLass/LassConsult.git`
 
-`cd consultDash`
+`cd LassConsult`
 
 `npm install`
 
@@ -45,15 +45,18 @@ Open Menu > Preferences > Default applications for LXSession
 
 Add these two entries to Autostart
 
-`@/home/pi/consultDash/startScript.sh`
+`@/home/pi/LassConsult/startScript.sh`
 
-`@chromium-browser —kiosk --incognito file:///home/pi/consultDash/re-direct-page.html`
-
-
+`@chromium-browser —kiosk --incognito file:///home/pi/LassConsult/re-direct-page.html`
 
 
 # How to run for development
 
-This will loop through MPH RPM and Temp so you can style things without being connected to a car :)
+This will loop through KPH RPM and Temp so you can style things without being connected to a car :)
 
 `npm run dev`
+
+# CREDITS
+
+Most of the work has been done by Greg Mathews, creator of the original consultDash.
+I just added more.

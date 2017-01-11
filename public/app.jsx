@@ -2,8 +2,11 @@ var Dash = React.createClass({
 	getInitialState: function () {
 		return {
 			rpm: 0,
-			mph: 0,
+			kph: 0,
 			coolantTemp: 0,
+			O2_1: 0,
+			O2_2: 0,
+			batteryVoltage: 0,
 			dash: "defaultDash",
 			drawer: false
 		};
@@ -13,8 +16,11 @@ var Dash = React.createClass({
 		this.socket = io();
 		this.socket.on('ecuData', function (data) {
 			that.setState({ rpm: data.rpm });
-			that.setState({ mph: data.mph });
+			that.setState({ kph: data.kph });
 			that.setState({ coolantTemp: data.coolantTemp });
+			that.setState({ O2_1: data.O2_1 });
+			that.setState({ O2_2: data.O2_2 });
+			that.setState({ batteryVoltage: data.batteryVoltage });
 		});
 		this.socket.emit('fetchComments');
 	},
@@ -54,26 +60,26 @@ var Dash = React.createClass({
 		}
 		return rpmMarkers;
 	},
-	renderMPH: function () {
-		var mph = this.state.mph;
-		var hundreds = "mph__number mph__number";
-		var tens = "mph__number mph__number";
-		var ones = "mph__number mph__number";
-		if (mph > 100){
-			hundreds += "--" + (mph + "")[0]
-			tens += "--" + (mph + "")[1]
-			ones += "--" + (mph % 10)
-		} else if (mph > 9){
-			tens += "--" + (mph + "")[0]
-			ones += "--" + (mph % 10)
+	renderKPH: function () {
+		var kph = this.state.kph;
+		var hundreds = "kph__number kph__number";
+		var tens = "kph__number kph__number";
+		var ones = "kph__number kph__number";
+		if (kph > 100){
+			hundreds += "--" + (kph + "")[0]
+			tens += "--" + (kph + "")[1]
+			ones += "--" + (kph % 10)
+		} else if (kph > 9){
+			tens += "--" + (kph + "")[0]
+			ones += "--" + (kph % 10)
 		} else {
-			ones += "--" + (mph % 10)
+			ones += "--" + (kph % 10)
 		}
 		return (
-			<div className="mph__container">
-				<div className="mph--background"><span className='mph__number--default'></span><span className='mph__number--default'></span><span className='mph__number--default'></span></div>
-				<div className="mph"><span className={hundreds}></span><span className={tens}></span><span className={ones}></span></div>
-				<p className="mph__label">MPH</p>
+			<div className="kph__container">
+				<div className="kph--background"><span className='kph__number--default'></span><span className='kph__number--default'></span><span className='kph__number--default'></span></div>
+				<div className="kph"><span className={hundreds}></span><span className={tens}></span><span className={ones}></span></div>
+				<p className="kph__label">KPH</p>
 			</div>
 		);
 	},
@@ -152,7 +158,7 @@ var Dash = React.createClass({
 			<span className='neon-dash-container'>
 				<div className={rpmClasses}>
 					{ this.rpmMarkers() }
-					{ this.renderMPH() }
+					{ this.renderKPH() }
 				</div>
 				<div className="small-num__container">
 						{ this.renderSmallNumbers(this.state.rpm) }
@@ -172,8 +178,8 @@ var Dash = React.createClass({
 						{ this.renderSmallNumbers(this.state.rpm) }
 						<p className="small-number__label">RPM</p>
 					</li>
-					<li className='mph-column'>
-						{ this.renderMPH() }
+					<li className='kph-column'>
+						{ this.renderKPH() }
 					</li>
 					<li className='temp-column'>
 						{ this.renderSmallNumbers(this.state.coolantTemp) }
